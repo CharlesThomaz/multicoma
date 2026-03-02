@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MultiComanda - Controle de Mesas</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="app">
+        <header>
+            <div class="logo">
+                <i class="fas fa-utensils"></i>
+                <h1>MultiComanda</h1>
+            </div>
+            <div class="user-info">
+                <span id="userName">Carregando...</span>
+                <button id="logoutBtn" class="btn-secondary"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            </div>
+        </header>
+
+        <!-- Main App Section (protegida por login) -->
+        <div id="mainSection" class="section">
+            <!-- Quick Stats -->
+            <div class="stats-container">
+                <div class="stat-card" onclick="filtrarMesas('todas')">
+                    <i class="fas fa-utensils"></i>
+                    <span class="stat-label">Total de Mesas</span>
+                    <span id="totalMesas" class="stat-value">0</span>
+                </div>
+                <div class="stat-card" onclick="filtrarMesas('ativas')">
+                    <i class="fas fa-clock"></i>
+                    <span class="stat-label">Mesas Ativas</span>
+                    <span id="activeTables" class="stat-value">0</span>
+                </div>
+                <div class="stat-card" onclick="filtrarMesas('fechadas')">
+                    <i class="fas fa-check-circle"></i>
+                    <span class="stat-label">Mesas Fechadas</span>
+                    <span id="closedTables" class="stat-value">0</span>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-dollar-sign"></i>
+                    <span class="stat-label">Faturamento Hoje</span>
+                    <span id="todayRevenue" class="stat-value">R$ 0</span>
+                </div>
+            </div>
+
+            <!-- Controle de Mesas -->
+            <div class="control-panel">
+                <div class="panel-left">
+                    <h3><i class="fas fa-sliders-h"></i> Configuração de Mesas</h3>
+                    <div class="config-section">
+                        <div class="input-group">
+                            <label for="quantidadeMesas">Quantidade de Mesas:</label>
+                            <input type="number" id="quantidadeMesas" min="1" max="50" value="12">
+                            <button id="configurarMesasBtn" class="btn-primary">
+                                <i class="fas fa-check"></i> Configurar
+                            </button>
+                        </div>
+                        <div class="quick-filters">
+                            <button class="filter-btn active" onclick="filtrarMesas('todas')">Todas</button>
+                            <button class="filter-btn" onclick="filtrarMesas('ativas')">Ativas</button>
+                            <button class="filter-btn" onclick="filtrarMesas('fechadas')">Fechadas</button>
+                            <button class="filter-btn" onclick="filtrarMesas('minhas')">Minhas</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-right">
+                    <button id="abrirMultiplasBtn" class="btn-success">
+                        <i class="fas fa-plus-circle"></i> Abrir Múltiplas Mesas
+                    </button>
+                </div>
+            </div>
+
+            <!-- Grade de Mesas -->
+            <div class="mesas-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-th"></i> Visão Geral das Mesas</h3>
+                    <div class="view-options">
+                        <button class="view-btn active" onclick="mudarVisualizacao('grade')">
+                            <i class="fas fa-th-large"></i> Grade
+                        </button>
+                        <button class="view-btn" onclick="mudarVisualizacao('lista')">
+                            <i class="fas fa-list"></i> Lista
+                        </button>
+                    </div>
+                </div>
+                <div id="mesasGrid" class="mesas-grid"></div>
+            </div>
+
+            <!-- Dashboard Resumido -->
+            <div class="dashboard-mini">
+                <h3><i class="fas fa-chart-line"></i> Resumo Rápido</h3>
+                <div class="mini-stats">
+                    <div class="mini-stat">
+                        <span class="mini-label">Tempo médio:</span>
+                        <span id="avgTimeMini" class="mini-value">0 min</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-label">Ticket médio:</span>
+                        <span id="avgTicketMini" class="mini-value">R$ 0</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-label">Ocupação:</span>
+                        <span id="ocupacaoMini" class="mini-value">0%</span>
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-label">Gorjetas:</span>
+                        <span id="gorjetasMini" class="mini-value">R$ 0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Detalhes da Mesa -->
+        <div id="mesaModal" class="modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2><i class="fas fa-utensils"></i> Mesa <span id="modalMesaNumero">1</span></h2>
+                    <span class="close-modal" onclick="fecharModal('mesaModal')">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="mesa-detalhes-grid">
+                        <div class="detalhe-card status-card">
+                            <div class="status-indicator" id="modalStatus">⚪ Livre</div>
+                            <div class="tempo-decorrido" id="modalTempo">00:00:00</div>
+                        </div>
+                        
+                        <div class="detalhe-card info-card">
+                            <h4>Informações</h4>
+                            <p><i class="fas fa-user"></i> Garçom: <span id="modalGarcom">-</span></p>
+                            <p><i class="fas fa-users"></i> Pessoas: <span id="modalPessoas">0</span></p>
+                            <p><i class="fas fa-clock"></i> Aberta em: <span id="modalAbertura">-</span></p>
+                        </div>
+                        
+                        <div class="detalhe-card consumo-card">
+                            <h4>Consumo <button class="btn-small" onclick="adicionarItem()"><i class="fas fa-plus"></i> Adicionar</button></h4>
+                            <div id="modalConsumo" class="consumo-lista"></div>
+                            <div class="total-consumo">
+                                <strong>Total:</strong> <span id="modalTotal">R$ 0,00</span>
+                            </div>
+                        </div>
+                        
+                        <div class="detalhe-card acoes-card">
+                            <h4>Ações</h4>
+                            <div class="acoes-botoes">
+                                <button class="btn-primary" onclick="abrirMesaModal()" id="btnAbrirMesa">
+                                    <i class="fas fa-play"></i> Abrir Mesa
+                                </button>
+                                <button class="btn-warning" onclick="pausarTempo()" id="btnPausar" style="display: none;">
+                                    <i class="fas fa-pause"></i> Pausar
+                                </button>
+                                <button class="btn-success" onclick="fecharMesaModal()" id="btnFechar" style="display: none;">
+                                    <i class="fas fa-check"></i> Fechar Conta
+                                </button>
+                                <button class="btn-danger" onclick="cancelarMesa()" id="btnCancelar" style="display: none;">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </button>
+                                <button class="btn-secondary" onclick="transferirMesa()" id="btnTransferir" style="display: none;">
+                                    <i class="fas fa-exchange-alt"></i> Transferir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Histórico da Mesa -->
+                    <div class="historico-mesa">
+                        <h4><i class="fas fa-history"></i> Histórico</h4>
+                        <div id="modalHistorico" class="historico-lista"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Abrir Múltiplas Mesas -->
+        <div id="multiMesaModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-plus-circle"></i> Abrir Múltiplas Mesas</h2>
+                    <span class="close-modal" onclick="fecharModal('multiMesaModal')">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="multiMesaForm">
+                        <div class="form-group">
+                            <label>Selecionar Mesas:</label>
+                            <div id="multiMesaSelector" class="mesas-selector"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Número de pessoas (para todas):</label>
+                            <input type="number" id="multiPessoas" min="1" value="2">
+                        </div>
+                        <div class="form-group">
+                            <label>Observações:</label>
+                            <textarea id="multiObs" placeholder="Observações gerais..."></textarea>
+                        </div>
+                        <button type="submit" class="btn-success">
+                            <i class="fas fa-check"></i> Abrir Mesas Selecionadas
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Fechamento -->
+        <div id="fecharMesaModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-receipt"></i> Fechar Mesa <span id="fecharMesaNumero"></span></h2>
+                    <span class="close-modal" onclick="fecharModal('fecharMesaModal')">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="fecharMesaForm">
+                        <div class="resumo-consumo" id="fecharResumo"></div>
+                        
+                        <div class="form-group">
+                            <label><i class="fas fa-dollar-sign"></i> Valor da Conta:</label>
+                            <input type="number" id="fecharValor" step="0.01" min="0" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><i class="fas fa-hand-holding-usd"></i> Gorjeta (%):</label>
+                            <div class="gorjeta-input">
+                                <input type="number" id="fecharGorjetaPercent" min="0" max="100" value="10" step="1">
+                                <span>%</span>
+                                <input type="number" id="fecharGorjetaValor" step="0.01" min="0" value="0" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><i class="fas fa-credit-card"></i> Forma de Pagamento:</label>
+                            <select id="fecharPagamento">
+                                <option value="dinheiro">Dinheiro</option>
+                                <option value="cartao">Cartão de Crédito</option>
+                                <option value="debito">Cartão de Débito</option>
+                                <option value="pix">PIX</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><i class="fas fa-star"></i> Feedback:</label>
+                            <select id="fecharFeedback">
+                                <option value="otimo">😊 Ótimo</option>
+                                <option value="bom">🙂 Bom</option>
+                                <option value="regular">😐 Regular</option>
+                                <option value="ruim">☹️ Ruim</option>
+                            </select>
+                        </div>
+                        
+                        <div class="total-final">
+                            <span>VALOR TOTAL:</span>
+                            <span id="fecharTotalFinal">R$ 0,00</span>
+                        </div>
+                        
+                        <button type="submit" class="btn-success">
+                            <i class="fas fa-check"></i> Confirmar Fechamento
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Login com Senha -->
+        <div id="loginModal" class="modal active">
+            <div class="modal-content" style="max-width: 400px;">
+                <div class="modal-header">
+                    <h2><i class="fas fa-lock"></i> Login do Garçom</h2>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label><i class="fas fa-user"></i> Usuário:</label>
+                            <input type="text" id="loginUsuario" required placeholder="Seu usuário">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-key"></i> Senha:</label>
+                            <input type="password" id="loginSenha" required placeholder="Sua senha">
+                        </div>
+                        <button type="submit" class="btn-primary" style="width: 100%;">
+                            <i class="fas fa-sign-in-alt"></i> Entrar
+                        </button>
+                    </form>
+                    <p style="text-align: center; margin-top: 15px;">
+                        Não tem cadastro? <a href="#" onclick="mostrarCadastro()">Cadastre-se</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Cadastro -->
+        <div id="cadastroModal" class="modal">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2><i class="fas fa-user-plus"></i> Cadastro de Garçom</h2>
+                    <span class="close-modal" onclick="fecharModal('cadastroModal')">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="cadastroForm">
+                        <div class="form-group">
+                            <label><i class="fas fa-user"></i> Nome Completo:</label>
+                            <input type="text" id="cadastroNome" required>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-id-card"></i> Usuário:</label>
+                            <input type="text" id="cadastroUsuario" required>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-key"></i> Senha:</label>
+                            <input type="password" id="cadastroSenha" required>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-key"></i> Confirmar Senha:</label>
+                            <input type="password" id="cadastroConfirmarSenha" required>
+                        </div>
+                        <button type="submit" class="btn-success" style="width: 100%;">
+                            <i class="fas fa-check"></i> Cadastrar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Editar Item -->
+        <div id="editarItemModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-edit"></i> Editar Item</h2>
+                    <span class="close-modal" onclick="fecharModal('editarItemModal')">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="editarItemForm">
+                        <input type="hidden" id="editarItemIndex">
+                        <div class="form-group">
+                            <label>Nome do Item:</label>
+                            <input type="text" id="editarItemNome" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Valor (R$):</label>
+                            <input type="number" id="editarItemValor" step="0.01" min="0" required>
+                        </div>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i> Salvar Alterações
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-analytics.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
